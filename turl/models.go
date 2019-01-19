@@ -67,7 +67,7 @@ func (u *Url) GetABCId() string {
 }
 
 func (u *Url) getABCIdDigitsCount() int {
-	// log(Url.Id) with ABC base
+	// log62(Url.Id)
 	l := math.Log2(float64(u.Id)) / math.Log2(float64(ABCBase))
 	digitsCount := int(math.Ceil(l))
 
@@ -76,4 +76,33 @@ func (u *Url) getABCIdDigitsCount() int {
 	}
 
 	return digitsCount
+}
+
+func ABCId2Id(ABCId string) (id int) {
+	var digit int
+
+	for i := 0; i < len(ABCId); i++ {
+		digit = ABCIndexOf(byte(ABCId[i]))
+
+		if -1 == digit {
+			return
+		}
+
+		id += digit * int(math.Pow(float64(ABCBase), float64(i)))
+	}
+
+	return
+}
+
+func ABCIndexOf(char byte) int {
+	var index = -1
+
+	for i := 0; i < ABCBase; i++ {
+		if ABC[i] == char {
+			index = i
+			break
+		}
+	}
+
+	return index
 }
