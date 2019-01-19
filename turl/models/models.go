@@ -11,6 +11,13 @@ const (
 	ErrUrlTooLong uint = 3
 )
 
+var ErrMsg = map[uint]string {
+	NoErrors:"No errors",
+	ErrNotValidUrl:"Field url not valid",
+	ErrEmptyUrl:"Field url is empty",
+	ErrUrlTooLong:"Field url is too long",
+}
+
 const (
 	EmptyStr = ""
 	MaxUrlLength = 2000
@@ -46,14 +53,38 @@ func (u *ShortUrl) Validate() (errorCode uint, ok bool) {
 		return
 	}
 
-	shortUrl, err := url.ParseRequestURI(u.Url)
+	_, err := url.ParseRequestURI(u.Url)
 
 	if nil != err {
 		errorCode, ok = ErrNotValidUrl, false
 	}
 
+	return NoErrors, true
+}
+
+func (u *LongUrl) Validate() (errorCode uint, ok bool) {
+	var length = uint(len(u.Url))
+
+	if 0 == length {
+		errorCode, ok = ErrEmptyUrl, false
+		return
+	}
+
+	if length > MaxUrlLength {
+		errorCode, ok = ErrUrlTooLong, false
+		return
+	}
+
+	shortUrl, err := url.ParseRequestURI(u.Url)
+
+	if nil != err {
+		errorCode, ok = ErrNotValidUrl, false
+		return
+	}
+
 	if shortUrl.Host != config.ServiceUrl().Host {
 		errorCode, ok = ErrNotValidUrl, false
+		return
 	}
 
 	errorCode, ok = u.validatePath(shortUrl.Path)
@@ -65,7 +96,7 @@ func (u *ShortUrl) Validate() (errorCode uint, ok bool) {
 	return NoErrors, true
 }
 
-func (u *ShortUrl) validatePath(path string) (errorCode uint, ok bool) {
+func (u *LongUrl) validatePath(path string) (errorCode uint, ok bool) {
 	var index int
 
 	errorCode, ok = NoErrors, true
@@ -86,26 +117,4 @@ func (u *ShortUrl) validatePath(path string) (errorCode uint, ok bool) {
 	}
 
 	return
-}
-
-func (u *LongUrl) Validate() (errorCode uint, ok bool) {
-	var length = uint(len(u.Url))
-
-	if 0 == length {
-		errorCode, ok = ErrEmptyUrl, false
-		return
-	}
-
-	if length > MaxUrlLength {
-		errorCode, ok = ErrUrlTooLong, false
-		return
-	}
-
-	_, err := url.ParseRequestURI(u.Url)
-
-	if nil != err {
-		errorCode, ok = ErrNotValidUrl, false
-	}
-
-	return NoErrors, true
 }

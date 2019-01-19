@@ -11,10 +11,20 @@ type UrlResponse struct {
 	Url string `json:"urls"`
 }
 
+type UrlError struct {
+	Code        uint    `json:"code"`
+	Description string `json:"description"`
+}
+
 func JsonResponse(w http.ResponseWriter, r interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 
 	json.NewEncoder(w).Encode(r)
+}
+
+func JsonError(w http.ResponseWriter, errorCode uint) {
+	w.WriteHeader(http.StatusBadRequest)
+	JsonResponse(w, &UrlError{Code:errorCode, Description:ErrMsg[errorCode]})
 }
 
 func HelloRoute(w http.ResponseWriter, r *http.Request) {
@@ -26,8 +36,10 @@ func ShortRoute(w http.ResponseWriter, r *http.Request) {
 
 	json.NewDecoder(r.Body).Decode(&url)
 
-	if 0 == len(url.Url) {
-		http.NotFound(w, r)
+	code, ok := url.Validate()
+
+	if !ok {
+		JsonError(w, code)
 		return
 	}
 
@@ -39,8 +51,10 @@ func LongRoute(w http.ResponseWriter, r *http.Request) {
 
 	json.NewDecoder(r.Body).Decode(&url)
 
-	if 0 == len(url.Url) {
-		http.NotFound(w, r)
+	code, ok := url.Validate()
+
+	if !ok {
+		JsonError(w, code)
 		return
 	}
 
