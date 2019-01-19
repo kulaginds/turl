@@ -14,9 +14,12 @@ const (
 )
 
 const (
+	emptyStr = ""
 	maxUrlLength = 2000
 
+	minABCIdLength = 4
 	ABC = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	ABCBase = 62
 )
 
 type Url struct {
@@ -50,16 +53,27 @@ func (u *Url) Validate() (errorCode uint, ok bool) {
 // Read from left to right
 func (u *Url) GetABCId() string {
 	var quotient, remainder = u.Id, 0
-	base := len(ABC)
-	maxABCIdLength := int(math.Ceil(math.Log2(float64(u.Id)) / math.Log2(float64(base))))
-	chars := make([]string, maxABCIdLength)
+	digitsCount := u.getABCIdDigitsCount()
+	chars := make([]string, digitsCount)
 
-	for i := 0; i < maxABCIdLength; i++ {
-		remainder = quotient % base
-		quotient = quotient / base
+	for i := 0; i < digitsCount; i++ {
+		remainder = quotient % ABCBase
+		quotient = quotient / ABCBase
 
 		chars[i] = string(ABC[remainder])
 	}
 
-	return strings.Join(chars, "")
+	return strings.Join(chars, emptyStr)
+}
+
+func (u *Url) getABCIdDigitsCount() int {
+	// log(Url.Id) with ABC base
+	l := math.Log2(float64(u.Id)) / math.Log2(float64(ABCBase))
+	digitsCount := int(math.Ceil(l))
+
+	if digitsCount < minABCIdLength {
+		digitsCount = minABCIdLength
+	}
+
+	return digitsCount
 }
