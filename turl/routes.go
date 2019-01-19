@@ -4,24 +4,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	. "turl/turl/models"
 )
 
 type UrlResponse struct {
-	Url string `json:"url"`
+	Url string `json:"urls"`
 }
 
-func jsonResponse(w http.ResponseWriter, r interface{}) {
+func JsonResponse(w http.ResponseWriter, r interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 
 	json.NewEncoder(w).Encode(r)
 }
 
 func HelloRoute(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Tiny url - url shorter")
+	fmt.Fprintln(w, "Tiny urls - urls shorter")
 }
 
 func ShortRoute(w http.ResponseWriter, r *http.Request) {
-	var url Url
+	url := ShortUrl{}
 
 	json.NewDecoder(r.Body).Decode(&url)
 
@@ -30,11 +31,11 @@ func ShortRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonResponse(w, &UrlResponse{Url:url.Url})
+	JsonResponse(w, &UrlResponse{Url:url.Url})
 }
 
 func LongRoute(w http.ResponseWriter, r *http.Request) {
-	var url Url
+	url := LongUrl{}
 
 	json.NewDecoder(r.Body).Decode(&url)
 
@@ -43,5 +44,5 @@ func LongRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonResponse(w, &UrlResponse{Url:url.Url})
+	JsonResponse(w, &UrlResponse{Url:url.Url})
 }
