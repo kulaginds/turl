@@ -10,21 +10,29 @@ import (
 )
 
 const (
-	NoErrors uint = 0
+	NoErrors       uint = 0
 	ErrNotValidUrl uint = 1
-	ErrEmptyUrl uint = 2
-	ErrUrlTooLong uint = 3
+	ErrEmptyUrl    uint = 2
+	ErrUrlTooLong  uint = 3
 
-	ErrShortLinkFail uint = 10
+	ErrDbPrepair      uint = 10
+	ErrDbExec         uint = 11
+	ErrDbLastInsertId uint = 12
 )
 
-var ErrMsg = map[uint]string {
-	NoErrors:"No errors",
-	ErrNotValidUrl:"Field url not valid",
-	ErrEmptyUrl:"Field url is empty",
-	ErrUrlTooLong:"Field url is too long",
+var MSG = map[uint]string {
+	0:"Failed to create short link",
+}
 
-	ErrShortLinkFail:"Failed to create short link",
+var ErrMsg = map[uint]string {
+	NoErrors:       "No errors",
+	ErrNotValidUrl: "Field url not valid",
+	ErrEmptyUrl:    "Field url is empty",
+	ErrUrlTooLong:  "Field url is too long",
+
+	ErrDbPrepair:      MSG[0],
+	ErrDbExec:         MSG[0],
+	ErrDbLastInsertId: MSG[0],
 }
 
 const (
@@ -93,13 +101,18 @@ func (u *ShortUrl) Validate() (errorCode uint, ok bool) {
 	return NoErrors, true
 }
 
-func (u *ShortUrl) Short() (url *LongUrl, ok bool) {
+func (u *ShortUrl) Short() (url *LongUrl, errorCode uint, ok bool) {
 	var result sql.Result
 	var id int64
+
+	if errorCode, ok = u.Validate(); !ok {
+		return
+	}
 
 	stmt, err := db.Prepare("INSERT INTO urls VALUES(NULL, ?)")
 
 	if nil != err {
+		errorCode = ErrDbPrepair
 		return
 	}
 
@@ -108,16 +121,18 @@ func (u *ShortUrl) Short() (url *LongUrl, ok bool) {
 	result, err = stmt.Exec(u.Url)
 
 	if nil != err {
+		errorCode = ErrDbExec
 		return
 	}
 
 	id, err = result.LastInsertId()
 
 	if nil != err {
+		errorCode = ErrDbLastInsertId
 		return
 	}
 
-	return &LongUrl{Url:u.getShortUrlById(int(id))}, true
+	return &LongUrl{Url:u.getShortUrlById(int(id))}, NoErrors, true
 }
 
 func (u *ShortUrl) getShortUrlById(id int) string {

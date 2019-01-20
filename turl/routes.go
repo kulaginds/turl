@@ -22,12 +22,20 @@ func JsonResponse(w http.ResponseWriter, r interface{}) {
 	json.NewEncoder(w).Encode(r)
 }
 
-func JsonClientError(w http.ResponseWriter, errorCode uint) {
+func JsonError(w http.ResponseWriter, errorCode uint) {
+	if errorCode < 10 {
+		jsonClientError(w, errorCode)
+	} else {
+		jsonServerError(w, errorCode)
+	}
+}
+
+func jsonClientError(w http.ResponseWriter, errorCode uint) {
 	w.WriteHeader(http.StatusBadRequest)
 	JsonResponse(w, &UrlError{Code:errorCode, Description:ErrMsg[errorCode]})
 }
 
-func JsonServerError(w http.ResponseWriter, errorCode uint) {
+func jsonServerError(w http.ResponseWriter, errorCode uint) {
 	w.WriteHeader(http.StatusInternalServerError)
 	JsonResponse(w, &UrlError{Code:errorCode, Description:ErrMsg[errorCode]})
 }
@@ -42,17 +50,10 @@ func ShortRoute(w http.ResponseWriter, r *http.Request) {
 
 	json.NewDecoder(r.Body).Decode(&url)
 
-	code, ok := url.Validate()
+	longUrl, code, ok := url.Short()
 
 	if !ok {
-		JsonClientError(w, code)
-		return
-	}
-
-	longUrl, ok = url.Short()
-
-	if !ok {
-		JsonServerError(w, ErrShortLinkFail)
+		JsonError(w, code)
 		return
 	}
 
@@ -67,7 +68,7 @@ func LongRoute(w http.ResponseWriter, r *http.Request) {
 	code, ok := url.Validate()
 
 	if !ok {
-		JsonClientError(w, code)
+		JsonError(w, code)
 		return
 	}
 
