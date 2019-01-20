@@ -7,11 +7,7 @@ import (
 	. "turl/turl/models"
 )
 
-type UrlResponse struct {
-	Url string `json:"urls"`
-}
-
-type UrlError struct {
+type Error struct {
 	Code        uint    `json:"code"`
 	Description string `json:"description"`
 }
@@ -32,12 +28,12 @@ func JsonError(w http.ResponseWriter, errorCode uint) {
 
 func jsonClientError(w http.ResponseWriter, errorCode uint) {
 	w.WriteHeader(http.StatusBadRequest)
-	JsonResponse(w, &UrlError{Code:errorCode, Description:ErrMsg[errorCode]})
+	JsonResponse(w, &Error{Code:errorCode, Description:ErrMsg[errorCode]})
 }
 
 func jsonServerError(w http.ResponseWriter, errorCode uint) {
 	w.WriteHeader(http.StatusInternalServerError)
-	JsonResponse(w, &UrlError{Code:errorCode, Description:ErrMsg[errorCode]})
+	JsonResponse(w, &Error{Code:errorCode, Description:ErrMsg[errorCode]})
 }
 
 func HelloRoute(w http.ResponseWriter, r *http.Request) {
@@ -45,32 +41,31 @@ func HelloRoute(w http.ResponseWriter, r *http.Request) {
 }
 
 func ShortRoute(w http.ResponseWriter, r *http.Request) {
-	var longUrl *LongUrl
-	url := ShortUrl{}
+	longUrl := LongUrl{}
 
-	json.NewDecoder(r.Body).Decode(&url)
+	json.NewDecoder(r.Body).Decode(&longUrl)
 
-	longUrl, code, ok := url.Short()
+	shortUrl, code, ok := longUrl.Short()
 
 	if !ok {
 		JsonError(w, code)
 		return
 	}
 
-	JsonResponse(w, &UrlResponse{Url:longUrl.Url})
+	JsonResponse(w, shortUrl)
 }
 
 func LongRoute(w http.ResponseWriter, r *http.Request) {
-	url := LongUrl{}
+	shortUrl := ShortUrl{}
 
-	json.NewDecoder(r.Body).Decode(&url)
+	json.NewDecoder(r.Body).Decode(&shortUrl)
 
-	code, ok := url.Validate()
+	longUrl, code, ok := shortUrl.Long()
 
 	if !ok {
 		JsonError(w, code)
 		return
 	}
 
-	JsonResponse(w, &UrlResponse{Url:url.Url})
+	JsonResponse(w, longUrl)
 }

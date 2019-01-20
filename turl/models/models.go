@@ -42,12 +42,12 @@ const (
 )
 
 type ShortUrl struct {
-	Id  int
-	Url string
+	Url string `json:"url"`
 }
 
 type LongUrl struct {
-	Url string
+	Id  int    `json:"-"`
+	Url string `json:"url"`
 }
 
 var abc *ABC
@@ -92,6 +92,69 @@ func (u *ShortUrl) Validate() (errorCode uint, ok bool) {
 		return
 	}
 
+	shortUrl, err := url.ParseRequestURI(u.Url)
+
+	if nil != err {
+		errorCode, ok = ErrNotValidUrl, false
+		return
+	}
+
+	if shortUrl.Host != config.ServiceUrl().Host {
+		errorCode, ok = ErrNotValidUrl, false
+		return
+	}
+
+	errorCode, ok = u.validatePath(shortUrl.Path)
+
+	if !ok {
+		return
+	}
+
+	return NoErrors, true
+}
+
+func (u *ShortUrl) Long() (url *LongUrl, errorCode uint, ok bool) {
+	// запрашивает урл в базе
+	// возвращает его
+	return &LongUrl{}, NoErrors, true
+}
+
+func (u *ShortUrl) validatePath(path string) (errorCode uint, ok bool) {
+	var index int
+
+	errorCode, ok = NoErrors, true
+
+	if "/" == string(path[0]) {
+		path = path[1:]
+	}
+
+	l := len(path)
+
+	for i := 0; i < l; i++ {
+		index = abc.IndexOf(path[i])
+
+		if -1 == index {
+			errorCode, ok = ErrNotValidUrl, false
+			return
+		}
+	}
+
+	return
+}
+
+func (u *LongUrl) Validate() (errorCode uint, ok bool) {
+	var length = uint(len(u.Url))
+
+	if 0 == length {
+		errorCode, ok = ErrEmptyUrl, false
+		return
+	}
+
+	if length > MaxUrlLength {
+		errorCode, ok = ErrUrlTooLong, false
+		return
+	}
+
 	_, err := url.ParseRequestURI(u.Url)
 
 	if nil != err {
@@ -101,7 +164,7 @@ func (u *ShortUrl) Validate() (errorCode uint, ok bool) {
 	return NoErrors, true
 }
 
-func (u *ShortUrl) Short() (url *LongUrl, errorCode uint, ok bool) {
+func (u *LongUrl) Short() (url *ShortUrl, errorCode uint, ok bool) {
 	var result sql.Result
 	var id int64
 
@@ -132,10 +195,10 @@ func (u *ShortUrl) Short() (url *LongUrl, errorCode uint, ok bool) {
 		return
 	}
 
-	return &LongUrl{Url:u.getShortUrlById(int(id))}, NoErrors, true
+	return &ShortUrl{Url:u.getShortUrlById(int(id))}, NoErrors, true
 }
 
-func (u *ShortUrl) getShortUrlById(id int) string {
+func (u *LongUrl) getShortUrlById(id int) string {
 	shortUrl := make([]string, 3)
 
 	shortUrl[0] = config.ServiceUrl().String()
@@ -143,61 +206,4 @@ func (u *ShortUrl) getShortUrlById(id int) string {
 	shortUrl[2] = abc.Encode(id)
 
 	return strings.Join(shortUrl, EmptyStr)
-}
-
-func (u *LongUrl) Validate() (errorCode uint, ok bool) {
-	var length = uint(len(u.Url))
-
-	if 0 == length {
-		errorCode, ok = ErrEmptyUrl, false
-		return
-	}
-
-	if length > MaxUrlLength {
-		errorCode, ok = ErrUrlTooLong, false
-		return
-	}
-
-	shortUrl, err := url.ParseRequestURI(u.Url)
-
-	if nil != err {
-		errorCode, ok = ErrNotValidUrl, false
-		return
-	}
-
-	if shortUrl.Host != config.ServiceUrl().Host {
-		errorCode, ok = ErrNotValidUrl, false
-		return
-	}
-
-	errorCode, ok = u.validatePath(shortUrl.Path)
-
-	if !ok {
-		return
-	}
-
-	return NoErrors, true
-}
-
-func (u *LongUrl) validatePath(path string) (errorCode uint, ok bool) {
-	var index int
-
-	errorCode, ok = NoErrors, true
-
-	if "/" == string(path[0]) {
-		path = path[1:]
-	}
-
-	l := len(path)
-
-	for i := 0; i < l; i++ {
-		index = abc.IndexOf(path[i])
-
-		if -1 == index {
-			errorCode, ok = ErrNotValidUrl, false
-			return
-		}
-	}
-
-	return
 }
