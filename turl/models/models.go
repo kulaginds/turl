@@ -14,6 +14,7 @@ const (
 	ErrNotValidUrl uint = 1
 	ErrEmptyUrl    uint = 2
 	ErrUrlTooLong  uint = 3
+	ErrUrlNotFound uint = 4
 
 	ErrDbPrepair      uint = 10
 	ErrDbExec         uint = 11
@@ -21,7 +22,7 @@ const (
 )
 
 var MSG = map[uint]string {
-	0:"Failed to create short link",
+	0:"Request failed",
 }
 
 var ErrMsg = map[uint]string {
@@ -29,6 +30,7 @@ var ErrMsg = map[uint]string {
 	ErrNotValidUrl: "Field url not valid",
 	ErrEmptyUrl:    "Field url is empty",
 	ErrUrlTooLong:  "Field url is too long",
+	ErrUrlNotFound: "Requested url not found",
 
 	ErrDbPrepair:      MSG[0],
 	ErrDbExec:         MSG[0],
@@ -113,10 +115,30 @@ func (u *ShortUrl) Validate() (errorCode uint, ok bool) {
 	return NoErrors, true
 }
 
-func (u *ShortUrl) Long() (url *LongUrl, errorCode uint, ok bool) {
-	// запрашивает урл в базе
-	// возвращает его
-	return &LongUrl{}, NoErrors, true
+func (u *ShortUrl) Long() (longUrl *LongUrl, errorCode uint, ok bool) {
+	if errorCode, ok = u.Validate(); !ok {
+		return
+	}
+
+	var rowUrl string
+
+	ok = false
+	id := u.parseUrlId()
+	row := db.QueryRow("SELECT url FROM urls WHERE id = ?", id)
+	err := row.Scan(&rowUrl)
+
+	if nil != err {
+		switch {
+		case err == sql.ErrNoRows:
+			errorCode = ErrUrlNotFound
+			break
+		default:
+			errorCode = ErrDbExec
+		}
+		return
+	}
+
+	return &LongUrl{Url:rowUrl}, NoErrors, true
 }
 
 func (u *ShortUrl) validatePath(path string) (errorCode uint, ok bool) {
@@ -140,6 +162,12 @@ func (u *ShortUrl) validatePath(path string) (errorCode uint, ok bool) {
 	}
 
 	return
+}
+
+func (u *ShortUrl) parseUrlId() int {
+	shortUrl, _ := url.ParseRequestURI(u.Url)
+
+	return abc.Decode(shortUrl.Path[1:])
 }
 
 func (u *LongUrl) Validate() (errorCode uint, ok bool) {
@@ -172,6 +200,7 @@ func (u *LongUrl) Short() (url *ShortUrl, errorCode uint, ok bool) {
 		return
 	}
 
+	ok = false
 	stmt, err := db.Prepare("INSERT INTO urls VALUES(NULL, ?)")
 
 	if nil != err {
