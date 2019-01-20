@@ -37,7 +37,7 @@ func Run() {
 	}
 
 	fmt.Println("Service url:", config.ServiceUrl())
-	fmt.Println("Service started on port:", config.ServicePort())
+	fmt.Println("Service started on port:", config.ServicePort()[1:])
 	log.Fatal(http.ListenAndServe(config.ServicePort(), router))
 }
 
