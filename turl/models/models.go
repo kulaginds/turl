@@ -139,14 +139,20 @@ func (u *ShortUrl) validatePath(path string) (errorCode uint, ok bool) {
 		path = path[1:]
 	}
 
+	prefixLen := len(config.ABCIdPrefix())
+
+	if prefixLen > 0 && config.ABCIdPrefix() != path[:prefixLen] {
+		return ErrNotValidUrl, false
+	}
+
+	path = path[prefixLen:]
 	l := len(path)
 
 	for i := 0; i < l; i++ {
 		index = abc.IndexOf(path[i])
 
 		if -1 == index {
-			errorCode, ok = ErrNotValidUrl, false
-			return
+			return ErrNotValidUrl, false
 		}
 	}
 
@@ -155,8 +161,14 @@ func (u *ShortUrl) validatePath(path string) (errorCode uint, ok bool) {
 
 func (u *ShortUrl) parseUrlId() int {
 	shortUrl, _ := url.ParseRequestURI(u.Url)
+	path        := shortUrl.Path[1:]
+	prefixLen   := len(config.ABCIdPrefix())
 
-	return abc.Decode(shortUrl.Path[1:])
+	if prefixLen > 0 {
+		path = path[prefixLen:]
+	}
+
+	return abc.Decode(path)
 }
 
 func (u *LongUrl) Validate() (errorCode uint, ok bool) {

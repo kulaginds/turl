@@ -12,6 +12,7 @@ type Config struct {
 	servicePort string
 	abc         string
 	abcIdMinLen int
+	abcIdPrefix string
 	dsn         string
 }
 
@@ -28,6 +29,7 @@ func (c *Config) Initialize() {
 	servicePort := parseUint16(os.Getenv("SERVICE_PORT"))
 	abc := os.Getenv("ABC")
 	abcIdMinLen := parseUint16(os.Getenv("ABC_ID_MIN_LENGTH"))
+	abcIdPrefix := os.Getenv("ABC_ID_PREFIX")
 	dbHost := os.Getenv("DB_HOST")
 	dbName := os.Getenv("DB_NAME")
 	dbUser := os.Getenv("DB_USER")
@@ -69,6 +71,7 @@ func (c *Config) Initialize() {
 	c.servicePort = ":" + strconv.FormatUint(uint64(servicePort), 10)
 	c.abc         = abc
 	c.abcIdMinLen = int(abcIdMinLen)
+	c.abcIdPrefix = abcIdPrefix
 	c.dsn         = prepareDsn(dbHost, dbName, dbUser, dbPassword)
 }
 
@@ -86,6 +89,10 @@ func (c *Config) ABC() string {
 
 func (c *Config) ABCIdMinLen() int {
 	return c.abcIdMinLen
+}
+
+func (c *Config) ABCIdPrefix() string {
+	return c.abcIdPrefix
 }
 
 func (c *Config) DSN() string {
