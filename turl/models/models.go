@@ -2,8 +2,8 @@ package models
 
 import (
 	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"net/url"
 	"os"
 	"strings"
@@ -82,24 +82,13 @@ func Initialize(conf *Config) (ok bool) {
 }
 
 func (u *ShortUrl) Validate() (errorCode uint, ok bool) {
-	var length = uint(len(u.Url))
+	errorCode, ok = validateUrl(u.Url)
 
-	if 0 == length {
-		errorCode, ok = ErrEmptyUrl, false
+	if !ok {
 		return
 	}
 
-	if length > MaxUrlLength {
-		errorCode, ok = ErrUrlTooLong, false
-		return
-	}
-
-	shortUrl, err := url.ParseRequestURI(u.Url)
-
-	if nil != err {
-		errorCode, ok = ErrNotValidUrl, false
-		return
-	}
+	shortUrl, _ := url.ParseRequestURI(u.Url)
 
 	if shortUrl.Host != config.ServiceUrl().Host {
 		errorCode, ok = ErrNotValidUrl, false
@@ -171,25 +160,7 @@ func (u *ShortUrl) parseUrlId() int {
 }
 
 func (u *LongUrl) Validate() (errorCode uint, ok bool) {
-	var length = uint(len(u.Url))
-
-	if 0 == length {
-		errorCode, ok = ErrEmptyUrl, false
-		return
-	}
-
-	if length > MaxUrlLength {
-		errorCode, ok = ErrUrlTooLong, false
-		return
-	}
-
-	_, err := url.ParseRequestURI(u.Url)
-
-	if nil != err {
-		errorCode, ok = ErrNotValidUrl, false
-	}
-
-	return NoErrors, true
+	return validateUrl(u.Url)
 }
 
 func (u *LongUrl) Short() (url *ShortUrl, errorCode uint, ok bool) {
@@ -235,4 +206,26 @@ func (u *LongUrl) getShortUrlById(id int) string {
 	shortUrl[2] = abc.Encode(id)
 
 	return strings.Join(shortUrl, EmptyStr)
+}
+
+func validateUrl(u string) (errorCode uint, ok bool) {
+	var length = uint(len(u))
+
+	if 0 == length {
+		errorCode, ok = ErrEmptyUrl, false
+		return
+	}
+
+	if length > MaxUrlLength {
+		errorCode, ok = ErrUrlTooLong, false
+		return
+	}
+
+	_, err := url.ParseRequestURI(u)
+
+	if nil != err {
+		errorCode, ok = ErrNotValidUrl, false
+	}
+
+	return NoErrors, true
 }
