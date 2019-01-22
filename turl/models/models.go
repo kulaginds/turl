@@ -2,10 +2,8 @@ package models
 
 import (
 	"database/sql"
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"net/url"
-	"os"
 	"strings"
 )
 
@@ -40,7 +38,6 @@ var ErrMsg = map[uint]string {
 const (
 	EmptyStr     = ""
 	MaxUrlLength = 2000
-	DbDriver     = "mysql"
 )
 
 type ShortUrl struct {
@@ -54,31 +51,14 @@ type LongUrl struct {
 
 var abc *ABC
 var config *Config
-var db *sql.DB
+var db *DB
 
 func Initialize(conf *Config) (ok bool) {
-	var err error
-
 	config = conf
 	abc = NewABC(conf.ABC(), conf.ABCIdMinLen())
+	db, ok = NewDB(conf.DSN())
 
-	db, err = sql.Open(DbDriver, config.DSN())
-
-	if nil != err {
-		fmt.Fprintln(os.Stderr, "Can't connect to DB via dsn:", config.DSN())
-		fmt.Fprintln(os.Stderr, err.Error())
-		return
-	}
-
-	err = db.Ping()
-
-	if nil != err {
-		fmt.Println("Can't ping DB")
-		fmt.Println(err.Error())
-		return
-	}
-
-	return true
+	return
 }
 
 func (u *ShortUrl) Validate() (errorCode uint, ok bool) {
@@ -109,12 +89,8 @@ func (u *ShortUrl) Long() (longUrl *LongUrl, errorCode uint, ok bool) {
 		return
 	}
 
-	var rowUrl string
-
-	ok = false
-	id := u.parseUrlId()
-	row := db.QueryRow("SELECT url FROM urls WHERE id = ?", id)
-	err := row.Scan(&rowUrl)
+	ok           = false
+	rowUrl, err := db.GetUrlById(u.parseUrlId())
 
 	if nil != err {
 		switch {
@@ -176,34 +152,15 @@ func (u *LongUrl) Validate() (errorCode uint, ok bool) {
 }
 
 func (u *LongUrl) Short() (url *ShortUrl, errorCode uint, ok bool) {
-	var result sql.Result
-	var id int64
-
 	if errorCode, ok = u.Validate(); !ok {
 		return
 	}
 
-	ok = false
-	stmt, err := db.Prepare("INSERT INTO urls VALUES(NULL, ?)")
-
-	if nil != err {
-		errorCode = ErrDbPrepair
-		return
-	}
-
-	defer stmt.Close()
-
-	result, err = stmt.Exec(u.Url)
+	ok       = false
+	id, err := db.AddUrl(u.Url)
 
 	if nil != err {
 		errorCode = ErrDbExec
-		return
-	}
-
-	id, err = result.LastInsertId()
-
-	if nil != err {
-		errorCode = ErrDbLastInsertId
 		return
 	}
 
