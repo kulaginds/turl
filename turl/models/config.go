@@ -14,7 +14,7 @@ type Config struct {
 	abcIdMinLen int
 	abcIdPrefix string
 	dsn         string
-	shardCount  uint16
+	shardCount  int
 }
 
 func NewConfig() *Config {
@@ -35,7 +35,7 @@ func (c *Config) Initialize() {
 	dbName := os.Getenv("DB_NAME")
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
-	shardCount := parseUint16(os.Getenv("SHARD_COUNT"))
+	shardCount := parseInt(os.Getenv("SHARD_COUNT"))
 
 	if nil != err {
 		serviceUrl, _ = url.ParseRequestURI("http://localhost:8080")
@@ -69,7 +69,7 @@ func (c *Config) Initialize() {
 		dbUser = "root"
 	}
 
-	if 0 == shardCount {
+	if shardCount <= 0 {
 		shardCount = 1
 	}
 
@@ -106,7 +106,7 @@ func (c *Config) DSN() string {
 	return c.dsn
 }
 
-func (c *Config) ShardCount() uint16 {
+func (c *Config) ShardCount() int {
 	return c.shardCount
 }
 
@@ -115,6 +115,16 @@ func parseUint16(input string) (output uint16) {
 
 	if nil != err {
 		output = uint16(p)
+	}
+
+	return
+}
+
+func parseInt(input string) (output int) {
+	p, err := strconv.ParseInt(input, 10, 32)
+
+	if nil != err {
+		output = int(p)
 	}
 
 	return

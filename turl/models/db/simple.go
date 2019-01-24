@@ -36,7 +36,8 @@ func NewSimpleDB(dsn string) (d *SimpleDB, ok bool) {
 }
 
 func (d *SimpleDB) Initialize() (ok bool) {
-	return CheckTable(d.db, urlsTable)
+	table := urlsTable
+	return CheckTable(d.db, &table, "0")
 }
 
 func (d *SimpleDB) GetUrlById(id int) (rowUrl string, err error) {

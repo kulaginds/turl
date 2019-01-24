@@ -27,7 +27,7 @@ type DB interface {
 	AddUrl(string) (int64, error)
 }
 
-func NewDB(dsn string, shardCount uint16) (d DB, ok bool) {
+func NewDB(dsn string, shardCount int) (d DB, ok bool) {
 	if shardCount > 1 {
 		d, ok = NewShardedDB(dsn, shardCount)
 	} else {
@@ -41,21 +41,21 @@ func NewDB(dsn string, shardCount uint16) (d DB, ok bool) {
 	return
 }
 
-func CheckTable(db *sql.DB, table string) (ok bool) {
+func CheckTable(db *sql.DB, table *string, autoIncrement string) (ok bool) {
 	columns := make([]*TableColumnStruct, 2)
 
-	rows, err := db.Query("DESCRIBE " + table)
+	rows, err := db.Query("DESCRIBE " + *table)
 
 	if nil != err {
 		me, ok := err.(*mysql.MySQLError)
 
 		if !ok || 1146 != me.Number {
-			fmt.Fprintln(os.Stderr, "Can't describe table " + table)
+			fmt.Fprintln(os.Stderr, "Can't describe table " + *table)
 			fmt.Fprintln(os.Stderr, err.Error())
 			return false
 		}
 
-		return createUrlsTable(db, table)
+		return CreateUrlsTable(db, table, autoIncrement)
 	}
 
 	defer rows.Close()
@@ -66,7 +66,7 @@ func CheckTable(db *sql.DB, table string) (ok bool) {
 		err = rows.Scan(&col.Field, &col.Type, &col.Null, &col.Key, &col.Default, &col.Extra)
 
 		if nil != err {
-			fmt.Fprintln(os.Stderr, "Can't scan columns from table " + table)
+			fmt.Fprintln(os.Stderr, "Can't scan columns from table " + *table)
 			fmt.Fprintln(os.Stderr, err.Error())
 			return
 		}
@@ -76,7 +76,7 @@ func CheckTable(db *sql.DB, table string) (ok bool) {
 	}
 
 	if err = rows.Err(); nil != err {
-		fmt.Fprintln(os.Stderr, "Some error in rows in table " + table)
+		fmt.Fprintln(os.Stderr, "Some error in rows in table " + *table)
 		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
@@ -84,12 +84,12 @@ func CheckTable(db *sql.DB, table string) (ok bool) {
 	return checkStruct(columns, table)
 }
 
-func createUrlsTable(db *sql.DB, table string) (ok bool) {
-	sql := "CREATE TABLE `" + table + "` (\n" +
+func CreateUrlsTable(db *sql.DB, table *string, autoIncrement string) (ok bool) {
+	sql := "CREATE TABLE `" + *table + "` (\n" +
 		"`id` int(10) unsigned NOT NULL AUTO_INCREMENT,\n" +
 		"`url` text NOT NULL,\n" +
 		"PRIMARY KEY (`id`)\n" +
-		") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;\n"
+		") ENGINE=InnoDB AUTO_INCREMENT=" + autoIncrement + " DEFAULT CHARSET=utf8;\n"
 
 	fmt.Println("Create table urls")
 
@@ -104,48 +104,56 @@ func createUrlsTable(db *sql.DB, table string) (ok bool) {
 	return true
 }
 
-func checkStruct(columns []*TableColumnStruct, table string) (ok bool) {
-	if ok = checkStructId(columns[0]); !ok {
-		fmt.Fprintln(os.Stderr, "Wrong structure of id field in table " + table)
+func checkStruct(columns []*TableColumnStruct, table *string) (ok bool) {
+	var field string
+
+	if field, ok = checkStructId(columns[0]); !ok {
+		fmt.Fprintln(os.Stderr, "Wrong structure of id field, column " + field + " in table " + *table)
 		return
 	}
 
-	if ok = checkStructUrl(columns[1]); !ok {
-		fmt.Fprintln(os.Stderr, "Wrong structure of url field in table " + table)
+	if field, ok = checkStructUrl(columns[1]); !ok {
+		fmt.Fprintln(os.Stderr, "Wrong structure of url field, column " + field + " in table " + *table)
 		return
 	}
 
 	return true
 }
 
-func checkStructId(idColumn *TableColumnStruct) (ok bool) {
+func checkStructId(idColumn *TableColumnStruct) (field string, ok bool) {
 	if "id" != *idColumn.Field {
+		field = "Field"
 		return
 	}
 
 	if "int(10) unsigned" != *idColumn.Type {
+		field = "Type"
 		return
 	}
 
 	if "PRI" != *idColumn.Key {
+		field = "Key"
 		return
 	}
 
 	if "auto_increment" != *idColumn.Extra {
+		field = "Extra"
 		return
 	}
 
-	return true
+	return "", true
 }
 
-func checkStructUrl(urlColumn *TableColumnStruct) (ok bool) {
+func checkStructUrl(urlColumn *TableColumnStruct) (field string, ok bool) {
 	if "url" != *urlColumn.Field {
+		field = "Field"
 		return
 	}
 
 	if "text" != *urlColumn.Type {
+		field = "Type"
 		return
 	}
 
-	return true
+	return "", true
 }
