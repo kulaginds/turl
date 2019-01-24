@@ -169,11 +169,12 @@ func (u *LongUrl) Short() (url *ShortUrl, errorCode uint, ok bool) {
 }
 
 func (u *LongUrl) getShortUrlById(id int) string {
-	shortUrl := make([]string, 3)
+	shortUrl := make([]string, 4)
 
 	shortUrl[0] = config.ServiceUrl().String()
 	shortUrl[1] = "/"
-	shortUrl[2] = abc.Encode(id)
+	shortUrl[2] = config.ABCIdPrefix()
+	shortUrl[3] = abc.Encode(id)
 
 	return strings.Join(shortUrl, EmptyStr)
 }
