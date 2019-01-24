@@ -5,6 +5,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"net/url"
 	"strings"
+	turlDb "turl/turl/models/db"
 )
 
 const (
@@ -51,12 +52,12 @@ type LongUrl struct {
 
 var abc *ABC
 var config *Config
-var db *DB
+var db turlDb.DB
 
 func Initialize(conf *Config) (ok bool) {
 	config = conf
-	abc = NewABC(conf.ABC(), conf.ABCIdMinLen())
-	db, ok = NewDB(conf.DSN())
+	abc = NewABC(config.ABC(), config.ABCIdMinLen())
+	db, ok = turlDb.NewDB(config.DSN(), config.ShardCount())
 
 	return
 }

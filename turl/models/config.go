@@ -14,6 +14,7 @@ type Config struct {
 	abcIdMinLen int
 	abcIdPrefix string
 	dsn         string
+	shardCount  uint16
 }
 
 func NewConfig() *Config {
@@ -34,6 +35,7 @@ func (c *Config) Initialize() {
 	dbName := os.Getenv("DB_NAME")
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
+	shardCount := parseUint16(os.Getenv("SHARD_COUNT"))
 
 	if nil != err {
 		serviceUrl, _ = url.ParseRequestURI("http://localhost:8080")
@@ -67,12 +69,17 @@ func (c *Config) Initialize() {
 		dbUser = "root"
 	}
 
+	if 0 == shardCount {
+		shardCount = 1
+	}
+
 	c.serviceUrl  = serviceUrl
 	c.servicePort = ":" + strconv.FormatUint(uint64(servicePort), 10)
 	c.abc         = abc
 	c.abcIdMinLen = int(abcIdMinLen)
 	c.abcIdPrefix = abcIdPrefix
 	c.dsn         = prepareDsn(dbHost, dbName, dbUser, dbPassword)
+	c.shardCount  = shardCount
 }
 
 func (c *Config) ServiceUrl() *url.URL {
@@ -97,6 +104,10 @@ func (c *Config) ABCIdPrefix() string {
 
 func (c *Config) DSN() string {
 	return c.dsn
+}
+
+func (c *Config) ShardCount() uint16 {
+	return c.shardCount
 }
 
 func parseUint16(input string) (output uint16) {
