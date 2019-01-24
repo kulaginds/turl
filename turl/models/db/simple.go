@@ -26,8 +26,8 @@ func NewSimpleDB(dsn string) (d *SimpleDB, ok bool) {
 	err = d.db.Ping()
 
 	if nil != err {
-		fmt.Println("Can't ping DB")
-		fmt.Println(err.Error())
+		fmt.Fprintln(os.Stderr, "Can't ping DB")
+		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
 
@@ -45,8 +45,8 @@ func (d *SimpleDB) Initialize() (ok bool) {
 		me, ok := err.(*mysql.MySQLError)
 
 		if !ok || 1146 != me.Number {
-			fmt.Println("Can't describe urls table")
-			fmt.Println(err.Error())
+			fmt.Fprintln(os.Stderr, "Can't describe urls table")
+			fmt.Fprintln(os.Stderr, err.Error())
 			return false
 		}
 
@@ -61,8 +61,8 @@ func (d *SimpleDB) Initialize() (ok bool) {
 		err = rows.Scan(&col.Field, &col.Type, &col.Null, &col.Key, &col.Default, &col.Extra)
 
 		if nil != err {
-			fmt.Println("Can't scan columns from urls table")
-			fmt.Println(err.Error())
+			fmt.Fprintln(os.Stderr, "Can't scan columns from urls table")
+			fmt.Fprintln(os.Stderr, err.Error())
 			return
 		}
 
@@ -71,8 +71,8 @@ func (d *SimpleDB) Initialize() (ok bool) {
 	}
 
 	if err = rows.Err(); nil != err {
-		fmt.Println("Some error in rows")
-		fmt.Println(err.Error())
+		fmt.Fprintln(os.Stderr, "Some error in rows")
+		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
 
@@ -91,8 +91,8 @@ func (d *SimpleDB) createUrlsTable() (ok bool) {
 	_, err := d.db.Exec(sql)
 
 	if nil != err {
-		fmt.Println("Can't create table urls")
-		fmt.Println(err.Error())
+		fmt.Fprintln(os.Stderr, "Can't create table urls")
+		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
 
@@ -101,12 +101,12 @@ func (d *SimpleDB) createUrlsTable() (ok bool) {
 
 func (d *SimpleDB) checkStruct(columns []*TableColumnStruct) (ok bool) {
 	if ok = d.checkStructId(columns[0]); !ok {
-		fmt.Println("Wrong structure of id field in table urls")
+		fmt.Fprintln(os.Stderr, "Wrong structure of id field in table urls")
 		return
 	}
 
 	if ok = d.checkStructUrl(columns[1]); !ok {
-		fmt.Println("Wrong structure of url field in table urls")
+		fmt.Fprintln(os.Stderr, "Wrong structure of url field in table urls")
 		return
 	}
 
@@ -146,7 +146,6 @@ func (d *SimpleDB) checkStructUrl(urlColumn *TableColumnStruct) (ok bool) {
 }
 
 func (d *SimpleDB) GetUrlById(id int) (rowUrl string, err error) {
-	// TODO: если количество шардов больше 1, найти таблицу текущего id
 	tbl := urlsTable
 	row := d.db.QueryRow("SELECT url FROM " + tbl + " WHERE id = ?", id)
 	err  = row.Scan(&rowUrl)
@@ -156,10 +155,6 @@ func (d *SimpleDB) GetUrlById(id int) (rowUrl string, err error) {
 
 func (d *SimpleDB) AddUrl(rowUrl string) (lastInsertId int64, err error) {
 	var result sql.Result
-
-	// TODO: если префикс не пустой и запись с lastInsertId
-	//  существует, найти новый lastInsertId
-	//  чтобы можно было создавать записи с ID=lastInsertId+1
 
 	tbl       := urlsTable
 	stmt, err := d.db.Prepare("INSERT INTO " + tbl + " VALUES(NULL, ?)")

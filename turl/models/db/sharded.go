@@ -7,13 +7,15 @@ import (
 )
 
 type ShardedDB struct {
-	db *sql.DB
+	db           *sql.DB
+	shardCount   uint16
+	lastInsertId int64
 }
 
 func NewShardedDB(dsn string, shardCount uint16) (d *ShardedDB, ok bool) {
 	var err error
 
-	d = &ShardedDB{}
+	d = &ShardedDB{shardCount:shardCount}
 	d.db, err = sql.Open(dbDriver, dsn)
 
 	if nil != err {
@@ -25,8 +27,8 @@ func NewShardedDB(dsn string, shardCount uint16) (d *ShardedDB, ok bool) {
 	err = d.db.Ping()
 
 	if nil != err {
-		fmt.Println("Can't ping DB")
-		fmt.Println(err.Error())
+		fmt.Fprintln(os.Stderr, "Can't ping DB")
+		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
 
