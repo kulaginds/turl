@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -18,16 +19,16 @@ func NewShardedDB(dsn string, shardCount int) (d *ShardedDB, ok bool) {
 	d.db, err = sql.Open(dbDriver, dsn)
 
 	if nil != err {
-		fmt.Fprintln(os.Stderr, "Can't connect to DB via dsn:", dsn)
-		fmt.Fprintln(os.Stderr, err.Error())
+		log.Fatalln("Can't connect to DB via dsn:", dsn)
+		log.Fatalln(err.Error())
 		return
 	}
 
 	err = d.db.Ping()
 
 	if nil != err {
-		fmt.Fprintln(os.Stderr, "Can't ping DB")
-		fmt.Fprintln(os.Stderr, err.Error())
+		log.Fatalln("Can't ping DB")
+		log.Fatalln(err.Error())
 		return
 	}
 
@@ -44,8 +45,8 @@ func (d *ShardedDB) Initialize() (ok bool) {
 	rows, err := d.db.Query("SHOW TABLES LIKE '" + urlsTable + "_%'")
 
 	if nil != err {
-		fmt.Fprintln(os.Stderr, "Can't get urls tables")
-		fmt.Fprintln(os.Stderr, err.Error())
+		log.Fatalln("Can't get urls tables")
+		log.Fatalln(err.Error())
 		return
 	}
 

@@ -2,8 +2,7 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
-	"os"
+	"log"
 )
 
 type SimpleDB struct {
@@ -17,16 +16,16 @@ func NewSimpleDB(dsn string) (d *SimpleDB, ok bool) {
 	d.db, err = sql.Open(dbDriver, dsn)
 
 	if nil != err {
-		fmt.Fprintln(os.Stderr, "Can't connect to DB via dsn:", dsn)
-		fmt.Fprintln(os.Stderr, err.Error())
+		log.Fatalln("Can't connect to DB via dsn:", dsn)
+		log.Fatalln(err.Error())
 		return
 	}
 
 	err = d.db.Ping()
 
 	if nil != err {
-		fmt.Fprintln(os.Stderr, "Can't ping DB")
-		fmt.Fprintln(os.Stderr, err.Error())
+		log.Fatalln("Can't ping DB")
+		log.Fatalln(err.Error())
 		return
 	}
 

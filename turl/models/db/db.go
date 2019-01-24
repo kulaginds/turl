@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
-	"os"
+	"log"
 )
 
 const (
@@ -50,8 +50,8 @@ func CheckTable(db *sql.DB, table *string, autoIncrement string) (ok bool) {
 		me, ok := err.(*mysql.MySQLError)
 
 		if !ok || 1146 != me.Number {
-			fmt.Fprintln(os.Stderr, "Can't describe table " + *table)
-			fmt.Fprintln(os.Stderr, err.Error())
+			log.Fatalln("Can't describe table " + *table)
+			log.Fatalln(err.Error())
 			return false
 		}
 
@@ -66,8 +66,8 @@ func CheckTable(db *sql.DB, table *string, autoIncrement string) (ok bool) {
 		err = rows.Scan(&col.Field, &col.Type, &col.Null, &col.Key, &col.Default, &col.Extra)
 
 		if nil != err {
-			fmt.Fprintln(os.Stderr, "Can't scan columns from table " + *table)
-			fmt.Fprintln(os.Stderr, err.Error())
+			log.Fatalln("Can't scan columns from table " + *table)
+			log.Fatalln(err.Error())
 			return
 		}
 
@@ -76,8 +76,8 @@ func CheckTable(db *sql.DB, table *string, autoIncrement string) (ok bool) {
 	}
 
 	if err = rows.Err(); nil != err {
-		fmt.Fprintln(os.Stderr, "Some error in rows in table " + *table)
-		fmt.Fprintln(os.Stderr, err.Error())
+		log.Fatalln("Some error in rows in table " + *table)
+		log.Fatalln(err.Error())
 		return
 	}
 
@@ -96,8 +96,8 @@ func CreateUrlsTable(db *sql.DB, table *string, autoIncrement string) (ok bool) 
 	_, err := db.Exec(sql)
 
 	if nil != err {
-		fmt.Fprintln(os.Stderr, "Can't create table urls")
-		fmt.Fprintln(os.Stderr, err.Error())
+		log.Fatalln("Can't create table urls")
+		log.Fatalln(err.Error())
 		return
 	}
 
@@ -108,12 +108,12 @@ func checkStruct(columns []*TableColumnStruct, table *string) (ok bool) {
 	var field string
 
 	if field, ok = checkStructId(columns[0]); !ok {
-		fmt.Fprintln(os.Stderr, "Wrong structure of id field, column " + field + " in table " + *table)
+		log.Fatalln("Wrong structure of id field, column " + field + " in table " + *table)
 		return
 	}
 
 	if field, ok = checkStructUrl(columns[1]); !ok {
-		fmt.Fprintln(os.Stderr, "Wrong structure of url field, column " + field + " in table " + *table)
+		log.Fatalln("Wrong structure of url field, column " + field + " in table " + *table)
 		return
 	}
 
