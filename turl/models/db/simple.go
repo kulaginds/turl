@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"github.com/go-sql-driver/mysql"
 	"os"
 )
 
@@ -37,71 +36,11 @@ func NewSimpleDB(dsn string) (d *SimpleDB, ok bool) {
 }
 
 func (d *SimpleDB) Initialize() (ok bool) {
-	columns := make([]*TableColumnStruct, 2)
-
-	rows, err := d.db.Query("DESCRIBE " + urlsTable)
-
-	if nil != err {
-		me, ok := err.(*mysql.MySQLError)
-
-		if !ok || 1146 != me.Number {
-			fmt.Fprintln(os.Stderr, "Can't describe urls table")
-			fmt.Fprintln(os.Stderr, err.Error())
-			return false
-		}
-
-		return d.createUrlsTable()
-	}
-
-	defer rows.Close()
-
-	i := 0
-	for rows.Next() {
-		col := new(TableColumnStruct)
-		err = rows.Scan(&col.Field, &col.Type, &col.Null, &col.Key, &col.Default, &col.Extra)
-
-		if nil != err {
-			fmt.Fprintln(os.Stderr, "Can't scan columns from urls table")
-			fmt.Fprintln(os.Stderr, err.Error())
-			return
-		}
-
-		columns[i] = col
-		i++
-	}
-
-	if err = rows.Err(); nil != err {
-		fmt.Fprintln(os.Stderr, "Some error in rows")
-		fmt.Fprintln(os.Stderr, err.Error())
-		return
-	}
-
-	return CheckStruct(columns)
-}
-
-func (d *SimpleDB) createUrlsTable() (ok bool) {
-	sql := "CREATE TABLE `urls` (\n" +
-				"`id` int(10) unsigned NOT NULL AUTO_INCREMENT,\n" +
-				"`url` text NOT NULL,\n" +
-				"PRIMARY KEY (`id`)\n" +
-			") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;\n"
-
-	fmt.Println("Create table urls")
-
-	_, err := d.db.Exec(sql)
-
-	if nil != err {
-		fmt.Fprintln(os.Stderr, "Can't create table urls")
-		fmt.Fprintln(os.Stderr, err.Error())
-		return
-	}
-
-	return true
+	return CheckTable(d.db, urlsTable)
 }
 
 func (d *SimpleDB) GetUrlById(id int) (rowUrl string, err error) {
-	tbl := urlsTable
-	row := d.db.QueryRow("SELECT url FROM " + tbl + " WHERE id = ?", id)
+	row := d.db.QueryRow("SELECT url FROM " + urlsTable + " WHERE id = ?", id)
 	err  = row.Scan(&rowUrl)
 
 	return
@@ -110,8 +49,7 @@ func (d *SimpleDB) GetUrlById(id int) (rowUrl string, err error) {
 func (d *SimpleDB) AddUrl(rowUrl string) (lastInsertId int64, err error) {
 	var result sql.Result
 
-	tbl       := urlsTable
-	stmt, err := d.db.Prepare("INSERT INTO " + tbl + " VALUES(NULL, ?)")
+	stmt, err := d.db.Prepare("INSERT INTO " + urlsTable + " VALUES(NULL, ?)")
 
 	if nil != err {
 		return
