@@ -29,7 +29,7 @@ func (c *Config) Initialize() {
 	serviceUrl, err := url.ParseRequestURI(os.Getenv("SERVICE_URL"))
 	servicePort := parseUint16(os.Getenv("SERVICE_PORT"))
 	abc := os.Getenv("ABC")
-	abcIdMinLen := parseUint16(os.Getenv("ABC_ID_MIN_LENGTH"))
+	abcIdMinLen := parseInt(os.Getenv("ABC_ID_MIN_LENGTH"))
 	abcIdPrefix := os.Getenv("ABC_ID_PREFIX")
 	dbHost := os.Getenv("DB_HOST")
 	dbName := os.Getenv("DB_NAME")
@@ -76,7 +76,7 @@ func (c *Config) Initialize() {
 	c.serviceUrl  = serviceUrl
 	c.servicePort = ":" + strconv.FormatUint(uint64(servicePort), 10)
 	c.abc         = abc
-	c.abcIdMinLen = int(abcIdMinLen)
+	c.abcIdMinLen = abcIdMinLen
 	c.abcIdPrefix = abcIdPrefix
 	c.dsn         = prepareDsn(dbHost, dbName, dbUser, dbPassword)
 	c.shardCount  = shardCount
@@ -113,7 +113,7 @@ func (c *Config) ShardCount() int {
 func parseUint16(input string) (output uint16) {
 	p, err := strconv.ParseUint(input, 10, 16)
 
-	if nil != err {
+	if nil == err {
 		output = uint16(p)
 	}
 
@@ -123,7 +123,7 @@ func parseUint16(input string) (output uint16) {
 func parseInt(input string) (output int) {
 	p, err := strconv.ParseInt(input, 10, 32)
 
-	if nil != err {
+	if nil == err {
 		output = int(p)
 	}
 
